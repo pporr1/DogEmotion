@@ -1,8 +1,9 @@
 
 Flask==3.0.3
 Keras==2.10.0
-Pillow==9.5.0
 gunicorn==22.0.0
 streamlit
 numpy>=1.24.0
 setuptools>=65.5.1
+--upgrade pip
+Pillow==9.0.1 
