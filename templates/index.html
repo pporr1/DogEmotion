@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตรวจจับอารมณ์สุนัข</title>
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center; /* Center text in container */
+        }
+        h1 {
+            color: #4a4a4a;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #2c3e50;
+            margin-top: 30px;
+        }
+        .upload-area {
+            border: 3px dashed #7f8c8d;
+            border-radius: 5px;
+            padding: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto; /* Center the upload area */
+        }
+        .upload-area:hover {
+            background-color: #ecf0f1;
+        }
+        .upload-text {
+            z-index: 1;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            margin-top: 20px;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+            text-align: center; /* Center text in results */
+        }
+        .submit-btn {
+            display: inline-block;
+            width: 200px;
+            margin: 10px;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: center;
+        }
+        .submit-btn:hover {
+            background-color: #2980b9;
+        }
+        .camera-container {
+            margin-top: 30px;
+            display: none;
+        }
+        video, canvas {
+            display: block;
+            margin: 0 auto;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐶 ตรวจจับอารมณ์สุนัข</h1>
+
+        <button id="upload-btn" class="submit-btn">อัปโหลดรูปภาพ</button>
+        <button id="camera-btn" class="submit-btn">ถ่ายรูปจากกล้อง</button>
+
+        <div id="upload-area" class="upload-area" style="display: none;">
+            <p class="upload-text">คลิกหรือลากรูปภาพที่นี่เพื่ออัปโหลด</p>
+            <img id="preview-image" alt="" style="display: none;">
+        </div>
+        <input type="file" id="file-input" style="display: none;" accept="image/*">
+
+        <div id="results" class="results">
+            <h3>ผลการทำนาย</h3>
+            <h2><p>กรุณาอัปโหลดรูปภาพเพื่อดูผลลัพธ์</p></h2>
+        </div>
+
+        <div id="camera-container" class="camera-container">
+            <h2>หรือถ่ายรูปจากกล้อง</h2>
+            <video id="video" width="320" height="240" autoplay></video>
+            <button id="snap" class="submit-btn">ถ่ายรูป</button>
+            <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="submit-btn" onclick="submitImage()">ส่งข้อมูล</button>
+            <button class="submit-btn" onclick="resetForm()">รีเซ็ต</button>
+        </div>
+    </div>
+
+    <footer>
+        © 2024 ตรวจจับอารมณ์สุนัข | พัฒนาด้วย ❤️ โดยทีมของเรา
+    </footer>
+
+    <script>
+        const uploadBtn = document.getElementById('upload-btn');
+        const cameraBtn = document.getElementById('camera-btn');
+        const uploadArea = document.getElementById('upload-area');
+        const cameraContainer = document.getElementById('camera-container');
+        const fileInput = document.getElementById('file-input');
+        const previewImage = document.getElementById('preview-image');
+        const uploadText = document.querySelector('.upload-text');
+
+        // Camera variables
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const snapButton = document.getElementById('snap');
+
+        uploadBtn.addEventListener('click', () => {
+            uploadArea.style.display = 'flex';
+            cameraContainer.style.display = 'none';
+            resetForm(); // Reset the form on upload button click
+        });
+
+        cameraBtn.addEventListener('click', () => {
+            cameraContainer.style.display = 'block';
+            uploadArea.style.display = 'none';
+            resetForm(); // Reset the form on camera button click
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+                    video.srcObject = stream;
+                    video.play();
+                });
+            }
+        });
+
+        // Capture the photo from the video stream
+        snapButton.addEventListener('click', function() {
+            context.drawImage(video, 0, 0, 320, 240);
+            const imageDataURL = canvas.toDataURL('image/jpeg');
+            previewImage.src = imageDataURL;
+            previewImage.style.display = 'block';
+            uploadText.textContent = 'ภาพจากกล้อง';
+        });
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '#ecf0f1';
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.backgroundColor = '';
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '';
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                    uploadText.textContent = 'ภาพที่เลือกแล้ว';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+            }
+        }
+
+        function submitImage() {
+            const file = fileInput.files[0];
+            let formData = new FormData();
+    
+             if (file) {
+             formData.append('my_image', file);
+             } else {
+            const canvasDataURL = canvas.toDataURL('image/jpeg');
+            formData.append('my_image', dataURLtoBlob(canvasDataURL));
+            }
+
+            fetch('/submit', {
+                method: 'POST',
+                 body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                     alert(data.error);
+                 } else {
+                    // Update results to show prediction and percentage
+                    let percentageText = data.percentage ? `(${data.percentage}%)` : '';
+                    document.getElementById('results').innerHTML = `
+                        <h3>ผลการทำนาย</h3>
+                       <h2><p>${data.prediction} ${percentageText}</p></h2>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('เกิดข้อผิดพลาดในการส่งข้อมูล');
+            });
+        }
+
+        function resetForm() {
+            previewImage.style.display = 'none';
+            uploadText.textContent = 'คลิกหรือลากรูปภาพที่นี่เพื่ออัปโหลด';
+            fileInput.value = '';
+            document.getElementById('results').innerHTML = `
+                <h3>ผลการทำนาย</h3>
+                <h2><p>กรุณาอัปโหลดรูปภาพเพื่อดูผลลัพธ์</p></h2>
+            `;
+        }
+
+        function dataURLtoBlob(dataURL) {
+            const byteString = atob(dataURL.split(',')[1]);
+            const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            return new Blob([ab], { type: mimeString });
+        }
+    </script>
+</body>
+</html>
