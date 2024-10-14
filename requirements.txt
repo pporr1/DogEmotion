@@ -5,5 +5,5 @@ gunicorn==22.0.0
 streamlit
 numpy>=1.24.0
 setuptools>=65.5.1
-Pillow==8.4.0
-
+Pillow==10.0.0
+Streamlit==1.18.0
